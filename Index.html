@@ -1,0 +1,2753 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>X2D TOPUP - Admin</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <!-- ====== FIREBASE SDK ====== -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js">
+    </script>
+
+    <style>
+        /* ====== ALL EXISTING STYLES REMAIN UNCHANGED ====== */
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700;800;900&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+            scroll-behavior: smooth;
+        }
+
+        /* ====== POPUP SYSTEM ====== */
+        #popup-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            width: 90%;
+            max-width: 420px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .popup-item {
+            pointer-events: auto;
+            width: 100%;
+            padding: 16px 18px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 8px 20px -8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            animation: popupSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .popup-item:hover {
+            transform: scale(1.02);
+        }
+
+        .popup-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        .popup-item.success::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+        .popup-item.error::before {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+        .popup-item.warning::before {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+        .popup-item.info::before {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .popup-item.success {
+            border-left: 4px solid #10b981;
+        }
+        .popup-item.error {
+            border-left: 4px solid #ef4444;
+        }
+        .popup-item.warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .popup-item.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .popup-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .popup-item.success .popup-icon {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .popup-item.error .popup-icon {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .popup-item.warning .popup-icon {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .popup-item.info .popup-icon {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .popup-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .popup-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        .popup-desc {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+        .popup-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #94a3b8;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .popup-close:hover {
+            background: #e2e8f0;
+            transform: scale(1.1);
+        }
+        .popup-close:active {
+            transform: scale(0.85);
+        }
+
+        @keyframes popupSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9) rotate(-2deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0deg);
+            }
+        }
+
+        @keyframes popupSlideOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) scale(0.9);
+            }
+        }
+
+        .popup-item.hiding {
+            animation: popupSlideOut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .popup-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 0 0 16px 16px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            animation: progressShrink 4s linear forwards;
+        }
+        .popup-item.success .popup-progress {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+        .popup-item.error .popup-progress {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+        .popup-item.warning .popup-progress {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        @keyframes progressShrink {
+            0% {
+                width: 100%;
+            }
+            100% {
+                width: 0%;
+            }
+        }
+
+        /* ====== GLASS CARD ====== */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+            border: 1px solid rgba(241, 245, 249, 0.9);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .soft-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            outline: none;
+            margin-bottom: 12px;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f8fafc;
+        }
+        .soft-input:focus {
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 4px 10px rgba(59, 130, 246, 0.04);
+        }
+
+        .label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .soft-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+            cursor: pointer;
+        }
+        .soft-btn:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+            filter: brightness(0.95);
+        }
+
+        .nav-active {
+            color: #3b82f6 !important;
+            transform: translateY(-4px);
+        }
+        .nav-active i {
+            background: #eff6ff;
+            padding: 8px 12px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            animation: bounceSoft 0.4s ease;
+        }
+
+        @keyframes bounceSoft {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .glow-blue {
+            animation: pulseGlowBlue 2.5s infinite alternate;
+        }
+        .glow-emerald {
+            animation: pulseGlowEmerald 2.5s infinite alternate;
+        }
+        .glow-rose {
+            animation: pulseGlowRose 2.5s infinite alternate;
+        }
+        .glow-indigo {
+            animation: pulseGlowIndigo 2.5s infinite alternate;
+        }
+        .glow-amber {
+            animation: pulseGlowAmber 2.5s infinite alternate;
+        }
+
+        @keyframes pulseGlowBlue {
+            0% {
+                box-shadow: 0 0 5px rgba(59, 130, 246, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.22);
+            }
+        }
+        @keyframes pulseGlowEmerald {
+            0% {
+                box-shadow: 0 0 5px rgba(16, 185, 129, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(16, 185, 129, 0.22);
+            }
+        }
+        @keyframes pulseGlowRose {
+            0% {
+                box-shadow: 0 0 5px rgba(244, 63, 94, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(244, 63, 94, 0.22);
+            }
+        }
+        @keyframes pulseGlowIndigo {
+            0% {
+                box-shadow: 0 0 5px rgba(99, 102, 241, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(99, 102, 241, 0.22);
+            }
+        }
+        @keyframes pulseGlowAmber {
+            0% {
+                box-shadow: 0 0 5px rgba(245, 158, 11, 0.1);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(245, 158, 11, 0.22);
+            }
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ====== IMAGE UTILITIES ====== */
+        .opt-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .opt-img-wrap {
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #f1f5f9;
+        }
+        .opt-img-wrap.circle {
+            border-radius: 50%;
+        }
+        .opt-img-wrap.rounded {
+            border-radius: 8px;
+        }
+        .opt-img-wrap.rounded-xl {
+            border-radius: 12px;
+        }
+        .opt-img-wrap.square-32 {
+            width: 32px;
+            height: 32px;
+        }
+        .opt-img-wrap.square-40 {
+            width: 40px;
+            height: 40px;
+        }
+        .opt-img-wrap.square-48 {
+            width: 48px;
+            height: 48px;
+        }
+        .opt-img-wrap.square-56 {
+            width: 56px;
+            height: 56px;
+        }
+        .opt-img-wrap.square-64 {
+            width: 64px;
+            height: 64px;
+        }
+        .opt-img-wrap.square-80 {
+            width: 80px;
+            height: 80px;
+        }
+        .opt-img-wrap.square-112 {
+            width: 112px;
+            height: 112px;
+        }
+        .opt-img-wrap.w-full {
+            width: 100%;
+        }
+        .opt-img-wrap.h-40 {
+            height: 160px;
+        }
+        .opt-img-wrap.h-56 {
+            height: 224px;
+        }
+
+        .upload-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            position: relative;
+            overflow: hidden;
+        }
+        .upload-box:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .upload-box input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .file-input-group .upload-box {
+            flex: 1;
+            min-width: 100px;
+        }
+        .file-input-group .url-input {
+            flex: 2;
+            min-width: 150px;
+        }
+        .upload-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .img-preview-container {
+            position: relative;
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            margin-top: 6px;
+        }
+        .img-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .img-preview-container.small {
+            height: 60px;
+        }
+        .img-preview-container.medium {
+            height: 80px;
+        }
+        .img-preview-container.large {
+            height: 120px;
+        }
+        .img-preview-container .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 5;
+        }
+        .img-preview-container .remove-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .offer-limit-badge-admin {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            backdrop-filter: blur(4px);
+        }
+        .offer-limit-badge-admin.soon {
+            background: #dc2626;
+            animation: pulse-limit 1.5s ease infinite;
+        }
+        .offer-limit-badge-admin.good {
+            background: #16a34a;
+        }
+        @keyframes pulse-limit {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ====== ADMIN LIST MODAL ====== */
+        #admin-list-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 99998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #admin-list-modal.show {
+            display: flex;
+        }
+        .admin-modal-box {
+            background: white;
+            border-radius: 28px;
+            max-width: 400px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+            animation: popupSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .admin-modal-box .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .admin-modal-box .modal-header h3 {
+            font-weight: 900;
+            font-size: 18px;
+            color: #0f172a;
+        }
+        .admin-modal-box .modal-header .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .admin-modal-box .modal-header .close-btn:hover {
+            background: #e2e8f0;
+        }
+        .admin-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .admin-list-item:last-child {
+            border-bottom: none;
+        }
+        .admin-list-item .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .admin-list-item .admin-info .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 16px;
+        }
+        .admin-list-item .admin-info .details .name {
+            font-weight: 800;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        .admin-list-item .admin-info .details .email {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .admin-list-item .remove-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .admin-list-item .remove-btn:hover {
+            background: #fecaca;
+        }
+        .admin-list-item .remove-btn:active {
+            transform: scale(0.95);
+        }
+        .admin-list-empty {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            padding: 20px 0;
+        }
+        .admin-lock-btn {
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+        .admin-lock-btn:hover {
+            background: #f1f5f9;
+        }
+
+        /* ====== EDIT UI MODAL ====== */
+        #edit-ui-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 99997;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #edit-ui-modal.show {
+            display: flex;
+        }
+        .edit-ui-modal-box {
+            background: white;
+            border-radius: 28px;
+            max-width: 420px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+            animation: popupSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .edit-ui-modal-box .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .edit-ui-modal-box .modal-header h3 {
+            font-weight: 900;
+            font-size: 16px;
+            color: #0f172a;
+        }
+        .edit-ui-modal-box .modal-header .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .edit-ui-modal-box .modal-header .close-btn:hover {
+            background: #e2e8f0;
+        }
+        .edit-ui-modal-box .method-name-display {
+            background: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #0f172a;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* ====== UPLOAD LOADER ====== */
+        .upload-loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .uploading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+            flex-direction: column;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body class="pb-24 text-slate-800">
+
+    <!-- ====== POPUP CONTAINER ====== -->
+    <div id="popup-container"></div>
+
+    <!-- ====== ADMIN LIST MODAL ====== -->
+    <div id="admin-list-modal">
+        <div class="admin-modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-shield text-blue-600 mr-2"></i> Admin Management</h3>
+                <button class="close-btn" onclick="closeAdminModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="admin-list-content">
+                <!-- Dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== EDIT UI MODAL ====== -->
+    <div id="edit-ui-modal">
+        <div class="edit-ui-modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-pen text-indigo-600 mr-2"></i> Edit Transaction UI</h3>
+                <button class="close-btn" onclick="closeEditUIModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="method-name-display" id="edit-ui-method-name">Method Name</div>
+            <input type="text" id="edit-ui-title" placeholder="UI Title (e.g., ট্রানজেকশন আইডি দিন)" class="soft-input">
+            <input type="text" id="edit-ui-step2" placeholder="Step 2 Text" class="soft-input">
+            <input type="text" id="edit-ui-verifybtn" placeholder="Verify Button Text" class="soft-input">
+            <textarea id="edit-ui-instr" placeholder="Instruction Text (e.g., *247# ডায়াল করুন)" class="soft-input h-16 resize-none"></textarea>
+            <button onclick="saveEditUI()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold soft-btn mt-2">Save UI Settings</button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="admin-login-screen" class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div class="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[32px] text-center shadow-2xl border border-white/20 glow-blue">
+            <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-3xl shadow-xl shadow-blue-500/30">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1 class="text-2xl font-black mb-2 text-slate-800 tracking-wide">ADMIN ACCESS</h1>
+            <p class="text-xs text-slate-400 font-bold mb-6" id="login-subtext">Enter your credentials</p>
+
+            <!-- Email Field (only shown on first login) -->
+            <div id="email-field-container">
+                <input type="email" id="admin-email-input" placeholder="Enter Email" class="soft-input text-center font-bold border-2 mb-2">
+            </div>
+
+            <input type="password" id="admin-pass-input" placeholder="Enter Password" class="soft-input text-center text-lg font-bold tracking-widest border-2">
+
+            <button onclick="checkAdminLogin()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 rounded-2xl font-bold soft-btn shadow-lg shadow-blue-200/50 transition-all duration-300">
+                <i class="fas fa-lock mr-2"></i> LOGIN TO PANEL
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Admin Panel -->
+    <div id="admin-dashboard" class="hidden">
+        <header class="bg-white/80 backdrop-blur-md p-4 sticky top-0 z-50 flex justify-between items-center shadow-sm border-b border-slate-100">
+            <h1 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                <i class="fas fa-user-shield text-blue-600"></i> X2D TOPUP - Admin
+            </h1>
+            <div class="flex gap-2 items-center">
+                <!-- Secret Admin Lock Button -->
+                <div class="admin-lock-btn" onclick="openAdminModal()" title="Admin Management (Secret)">
+                    <i class="fas fa-lock text-slate-400 text-sm hover:text-blue-600 transition-colors"></i>
+                </div>
+                <button onclick="exportBackupData()" class="text-xs bg-emerald-50 text-emerald-600 px-3 py-2 rounded-xl soft-btn font-bold border border-emerald-100 transition-all hover:bg-emerald-100">
+                    <i class="fas fa-download mr-1"></i> Backup
+                </button>
+                <button onclick="location.reload()" class="text-xs bg-slate-100 text-slate-600 px-4 py-2 rounded-xl soft-btn font-bold transition-all hover:bg-slate-200">
+                    <i class="fas fa-sync-alt mr-1"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <main class="max-w-2xl mx-auto p-4 mt-2">
+
+            <!-- Tab: Orders -->
+            <section id="tab-orders" class="tab-content active">
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center hover:scale-[1.02] transition-transform">
+                        <i class="fas fa-users text-blue-500 text-xl mb-2"></i>
+                        <p class="text-[10px] font-bold text-gray-400">TOTAL USERS</p>
+                        <h3 class="font-black text-slate-800 text-lg" id="stat-users">0</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center hover:scale-[1.02] transition-transform">
+                        <i class="fas fa-chart-line text-emerald-500 text-xl mb-2"></i>
+                        <p class="text-[10px] font-bold text-gray-400">TOTAL SALE</p>
+                        <h3 class="font-black text-slate-800 text-lg" id="stat-revenue">৳0</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center hover:scale-[1.02] transition-transform">
+                        <i class="fas fa-clock text-orange-500 text-xl mb-2"></i>
+                        <p class="text-[10px] font-bold text-gray-400">PENDING</p>
+                        <h3 class="font-black text-orange-600 text-lg" id="pending-count">0</h3>
+                    </div>
+                </div>
+
+                <!-- Claimed Offers List -->
+                <div class="glass-card border-2 border-rose-500/20 glow-rose">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="font-black text-rose-600 text-md flex items-center gap-2">
+                            <i class="fas fa-gift"></i> Claimed Offers List
+                        </h3>
+                        <span id="claimed-offers-count" class="text-xs font-black bg-rose-100 text-rose-600 px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="admin-claimed-offers-list" class="space-y-3 max-h-56 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Reports Center -->
+                <div class="glass-card border-2 border-indigo-500/20 glow-indigo">
+                    <div class="flex justify-between items-center mb-3 border-b pb-2">
+                        <h3 class="font-black text-indigo-600 text-md flex items-center gap-2">
+                            <i class="fas fa-headset"></i> User Reports Center
+                        </h3>
+                        <span id="admin-reports-count" class="text-xs font-black bg-indigo-100 text-indigo-600 px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+
+                    <div class="bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100/70 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-robot text-indigo-600 text-base"></i>
+                            <b class="text-xs text-indigo-900">AI Report Assistant</b>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="ai-report-query" placeholder="Search reports..." class="soft-input bg-white mb-0 text-xs">
+                            <button onclick="askAIReportAssistant()" class="bg-indigo-600 text-white px-4 rounded-xl font-bold text-xs soft-btn flex-shrink-0">Ask AI</button>
+                        </div>
+                        <div id="ai-report-response" class="mt-2 text-[11px] font-bold text-indigo-800 hidden bg-white p-2.5 rounded-xl border border-indigo-100 leading-relaxed"></div>
+                    </div>
+
+                    <div id="admin-reports-list" class="space-y-3 max-h-72 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Pending Requests -->
+                <div class="flex justify-between items-center mb-3 px-2">
+                    <h3 class="font-black text-red-500 text-lg flex items-center gap-2"><i class="fas fa-bell"></i> PENDING REQUESTS</h3>
+                    <select id="req-filter" onchange="searchOrders()" class="text-xs p-1.5 rounded-lg border font-bold text-slate-600 bg-white">
+                        <option value="">All Types</option>
+                        <option value="deposit">Deposit Only</option>
+                        <option value="purchase">Purchase Only</option>
+                    </select>
+                </div>
+                <input type="text" id="search-req" onkeyup="searchOrders()" placeholder="🔍 Search TrxID, ID or Name..." class="soft-input bg-white shadow-sm mb-4 font-bold text-sm">
+                <div id="a-req-list" class="space-y-4"></div>
+            </section>
+
+            <!-- Tab: Shop -->
+            <section id="tab-shop" class="tab-content">
+                <div class="glass-card">
+                    <h3 class="font-black text-teal-600 mb-4 flex items-center gap-2"><i class="fas fa-layer-group"></i> MANAGE CATEGORIES</h3>
+                    <div id="cat-slider-admin" class="flex overflow-x-auto gap-3 pb-4 mb-2 hide-scrollbar snap-x"></div>
+                    <div class="bg-teal-50 p-3 rounded-2xl border border-teal-100">
+                        <input type="text" id="c-name" placeholder="Category Name (e.g., Free Fire)" class="soft-input bg-white mb-2">
+
+                        <label class="upload-label">Category Image (Upload or URL)</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="c-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Image</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'c-img-preview', 'c-img', 'c-upload-box')">
+                            </div>
+                            <input type="text" id="c-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('c-img', 'c-img-preview', 'c-img-preview-container')">
+                        </div>
+                        <div id="c-img-preview-container" class="img-preview-container medium hidden">
+                            <img id="c-img-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('c-img', 'c-img-preview', 'c-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+
+                        <button onclick="addSection()" class="w-full bg-teal-600 text-white py-3 rounded-xl font-bold soft-btn mt-2">Add Category</button>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="font-black text-rose-600 mb-4 flex items-center gap-2"><i class="fas fa-gift"></i> MANAGE OFFERS</h3>
+                    <div id="admin-offers-list" class="space-y-3 mb-4"></div>
+                    <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                        <input type="text" id="off-title" placeholder="Offer Name" class="soft-input bg-white">
+                        <input type="text" id="off-price" placeholder="Price/Details" class="soft-input bg-white">
+                        <input type="number" id="off-limit" placeholder="Total Limit (0 = Unlimited)" class="soft-input bg-white font-bold">
+
+                        <label class="upload-label">Offer Image (Upload or URL)</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="off-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Image</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'off-img-preview', 'off-img', 'off-upload-box')">
+                            </div>
+                            <input type="text" id="off-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('off-img', 'off-img-preview', 'off-img-preview-container')">
+                        </div>
+                        <div id="off-img-preview-container" class="img-preview-container medium hidden">
+                            <img id="off-img-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('off-img', 'off-img-preview', 'off-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+
+                        <button onclick="addOffer()" class="w-full bg-rose-600 text-white py-3 rounded-xl font-bold soft-btn mt-2">Add New Offer</button>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="font-black text-purple-600 mb-4 flex items-center gap-2"><i class="fas fa-box-open"></i> ADD PACKAGES</h3>
+                    <select id="sel-sec" class="soft-input font-bold text-slate-700 bg-white"></select>
+                    <input type="text" id="p-name" placeholder="Service Name (e.g., Diamonds)" class="soft-input">
+
+                    <label class="upload-label">Product Image (Upload or URL)</label>
+                    <div class="file-input-group">
+                        <div class="upload-box" id="p-upload-box">
+                            <i class="fas fa-upload text-slate-400"></i>
+                            <span class="text-xs text-slate-500 block">Upload Image</span>
+                            <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'p-img-preview', 'p-img', 'p-upload-box')">
+                        </div>
+                        <input type="text" id="p-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('p-img', 'p-img-preview', 'p-img-preview-container')">
+                    </div>
+                    <div id="p-img-preview-container" class="img-preview-container medium hidden">
+                        <img id="p-img-preview" src="" alt="Preview">
+                        <button onclick="clearImageField('p-img', 'p-img-preview', 'p-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <label class="label">Packages</label>
+                    <textarea id="p-packs" class="soft-input h-48 font-mono text-xs leading-relaxed" placeholder="monthly membership 750&#10;Weekly Membership: 155 TK&#10;25 Diamond 20"></textarea>
+                    <button onclick="addProduct()" class="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold soft-btn mt-2">Publish Product</button>
+                    <h4 class="font-bold text-slate-700 mt-6 mb-2 border-b pb-2">All Products</h4>
+                    <div id="product-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- Tab: AI -->
+            <section id="tab-ai" class="tab-content">
+                <div class="glass-card border-2 border-blue-500/20 glow-blue">
+                    <h3 class="font-black text-blue-600 mb-2 flex items-center gap-2"><i class="fas fa-robot text-xl"></i> AI AUTONOMOUS CONTROL</h3>
+                    <p class="text-xs text-slate-600 mb-4 font-bold leading-relaxed">
+                        Enable AI auto-approval for orders and AI dynamic rank management.
+                    </p>
+
+                    <div class="flex items-center justify-between bg-blue-50 p-4 rounded-2xl border border-blue-200 mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center text-lg"><i class="fas fa-magic"></i></div>
+                            <div>
+                                <b class="text-sm text-slate-800 block">Order Auto-Approval</b>
+                                <span id="ai-status-text" class="text-[10px] font-bold text-gray-500">Disabled</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="ai-auto-toggle" onchange="toggleAIAutoApprove()" class="sr-only peer">
+                            <div class="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-purple-50 p-4 rounded-2xl border border-purple-200 mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-purple-600 text-white rounded-xl flex items-center justify-center text-lg"><i class="fas fa-trophy"></i></div>
+                            <div>
+                                <b class="text-sm text-slate-800 block">AI Rank Manager</b>
+                                <span id="ai-rank-status-text" class="text-[10px] font-bold text-gray-500">Manual</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="ai-rank-toggle" onchange="toggleAIRankControl()" class="sr-only peer">
+                            <div class="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="font-black text-blue-600 mb-4 flex items-center gap-2"><i class="fas fa-chart-bar"></i> AI SMART ANALYTICS</h3>
+                    <p class="text-xs text-slate-600 mb-4 font-bold">Get AI-powered insights and recommendations:</p>
+                    <div class="space-y-3 mb-4">
+                        <button onclick="askAdminAI('summary')" class="w-full bg-blue-50 text-blue-600 p-3.5 rounded-xl font-bold text-xs text-left border border-blue-100 soft-btn flex items-center justify-between">
+                            <span><i class="fas fa-chart-pie mr-2"></i> Generate Sales & User Summary</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button onclick="askAdminAI('pending')" class="w-full bg-orange-50 text-orange-600 p-3.5 rounded-xl font-bold text-xs text-left border border-orange-100 soft-btn flex items-center justify-between">
+                            <span><i class="fas fa-clock mr-2"></i> Pending Order Analysis</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div id="admin-ai-output" class="bg-slate-50 p-4 rounded-2xl border text-xs font-mono text-slate-700 hidden leading-relaxed"></div>
+                </div>
+            </section>
+
+            <!-- Tab: Gateway -->
+            <section id="tab-gateway" class="tab-content">
+                <div class="glass-card">
+                    <h3 class="font-black text-indigo-600 mb-4 flex items-center gap-2"><i class="fas fa-plus-circle"></i> PAYMENT METHODS</h3>
+                    <div id="custom-methods-list" class="space-y-3 mb-5"></div>
+                    <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                        <input type="text" id="pm-name" placeholder="Method Name" class="soft-input bg-white">
+                        <input type="text" id="pm-num" placeholder="Account Number" class="soft-input bg-white font-mono">
+
+                        <label class="upload-label">Logo (Upload or URL)</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="pm-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Logo</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'pm-logo-preview', 'pm-logo', 'pm-upload-box')">
+                            </div>
+                            <input type="text" id="pm-logo" placeholder="Or paste Logo URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('pm-logo', 'pm-logo-preview', 'pm-logo-preview-container')">
+                        </div>
+                        <div id="pm-logo-preview-container" class="img-preview-container small hidden">
+                            <img id="pm-logo-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('pm-logo', 'pm-logo-preview', 'pm-logo-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-3 bg-white p-3 rounded-xl border border-slate-200">
+                            <label class="text-xs font-bold text-slate-600">Theme Color:</label>
+                            <input type="color" id="pm-color" value="#8C3494" class="w-10 h-10 rounded cursor-pointer border-0">
+                        </div>
+                        <button onclick="addPaymentMethod()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold soft-btn">Add New Method</button>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="font-black text-emerald-600 mb-4 flex items-center gap-2"><i class="fas fa-cog"></i> CORE GATEWAY & UI</h3>
+
+                    <div class="grid grid-cols-2 gap-4 mb-2">
+                        <div><label class="label">Bkash Number</label><input type="text" id="a-bkash" class="soft-input font-mono font-bold"></div>
+                        <div><label class="label">Nagad Number</label><input type="text" id="a-nagad" class="soft-input font-mono font-bold"></div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="label text-pink-600">Bkash Logo</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="a-bkash-logo-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Logo</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-bkash-logo-preview', 'a-bkash-logo', 'a-bkash-logo-upload-box')">
+                            </div>
+                            <input type="text" id="a-bkash-logo" placeholder="Or paste Logo URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-bkash-logo', 'a-bkash-logo-preview', 'a-bkash-logo-preview-container')">
+                        </div>
+                        <div id="a-bkash-logo-preview-container" class="img-preview-container small hidden">
+                            <img id="a-bkash-logo-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('a-bkash-logo', 'a-bkash-logo-preview', 'a-bkash-logo-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="label text-orange-600">Nagad Logo</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="a-nagad-logo-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Logo</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-nagad-logo-preview', 'a-nagad-logo', 'a-nagad-logo-upload-box')">
+                            </div>
+                            <input type="text" id="a-nagad-logo" placeholder="Or paste Logo URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-nagad-logo', 'a-nagad-logo-preview', 'a-nagad-logo-preview-container')">
+                        </div>
+                        <div id="a-nagad-logo-preview-container" class="img-preview-container small hidden">
+                            <img id="a-nagad-logo-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('a-nagad-logo', 'a-nagad-logo-preview', 'a-nagad-logo-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="label text-emerald-600">Deposit Page Top Image</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="a-deposit-img-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Image</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-deposit-img-preview', 'a-deposit-img', 'a-deposit-img-upload-box')">
+                            </div>
+                            <input type="text" id="a-deposit-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-deposit-img', 'a-deposit-img-preview', 'a-deposit-img-preview-container')">
+                        </div>
+                        <div id="a-deposit-img-preview-container" class="img-preview-container small hidden">
+                            <img id="a-deposit-img-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('a-deposit-img', 'a-deposit-img-preview', 'a-deposit-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="label text-orange-600"><i class="fab fa-youtube text-red-500 mr-1"></i> Tutorial Video Link</label>
+                        <input type="text" id="a-tutorial-link" placeholder="https://youtube.com/..." class="soft-input text-xs">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="label text-blue-600">Wallet Pay Image</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="a-wallet-pay-img-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Image</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-wallet-pay-img-preview', 'a-wallet-pay-img', 'a-wallet-pay-img-upload-box')">
+                            </div>
+                            <input type="text" id="a-wallet-pay-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-wallet-pay-img', 'a-wallet-pay-img-preview', 'a-wallet-pay-img-preview-container')">
+                        </div>
+                        <div id="a-wallet-pay-img-preview-container" class="img-preview-container small hidden">
+                            <img id="a-wallet-pay-img-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('a-wallet-pay-img', 'a-wallet-pay-img-preview', 'a-wallet-pay-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="label text-purple-600">Instant Pay Image</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="a-instant-pay-img-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Image</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-instant-pay-img-preview', 'a-instant-pay-img', 'a-instant-pay-img-upload-box')">
+                            </div>
+                            <input type="text" id="a-instant-pay-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-instant-pay-img', 'a-instant-pay-img-preview', 'a-instant-pay-img-preview-container')">
+                        </div>
+                        <div id="a-instant-pay-img-preview-container" class="img-preview-container small hidden">
+                            <img id="a-instant-pay-img-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('a-instant-pay-img', 'a-instant-pay-img-preview', 'a-instant-pay-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 my-4 pt-4">
+                        <h4 class="font-bold text-slate-700 mb-3 text-sm"><i class="fas fa-paint-brush text-emerald-500"></i> Transaction UI</h4>
+                        <label class="label">Main Title</label>
+                        <input type="text" id="ui-title" class="soft-input">
+                        <label class="label">Step 2 Text</label>
+                        <input type="text" id="ui-step2" class="soft-input">
+                        <label class="label">bKash Instruction</label>
+                        <input type="text" id="ui-bkash-instr" class="soft-input text-xs">
+                        <label class="label">Nagad Instruction</label>
+                        <input type="text" id="ui-nagad-instr" class="soft-input text-xs">
+                        <label class="label">Verify Button Text</label>
+                        <input type="text" id="ui-btn" class="soft-input">
+                    </div>
+                    <button onclick="saveGatewaySettings()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold soft-btn mt-2 shadow-lg shadow-emerald-200">Save Gateway Settings</button>
+                </div>
+            </section>
+
+            <!-- Tab: Users -->
+            <section id="tab-users" class="tab-content">
+                <div class="glass-card">
+                    <h3 class="font-black text-indigo-600 mb-4 flex items-center gap-2"><i class="fas fa-users-cog"></i> USER MANAGEMENT</h3>
+                    <input type="text" id="search-user" onkeyup="searchAdminUsers()" placeholder="🔍 Search User Name or Email..." class="soft-input bg-white shadow-sm mb-4 font-bold text-xs">
+                    <div id="user-list-admin" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- Tab: Settings -->
+            <section id="tab-settings" class="tab-content">
+                <div class="glass-card border-2 border-emerald-500/30 glow-emerald">
+                    <h3 class="font-black text-emerald-600 mb-2 flex items-center gap-2"><i class="fas fa-database"></i> SYSTEM BACKUP</h3>
+                    <p class="text-xs text-slate-600 mb-4 font-bold">Export or import full system backup:</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="exportBackupData()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold soft-btn text-xs"><i class="fas fa-download mr-1"></i> Export Data</button>
+                        <label class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold soft-btn text-xs text-center cursor-pointer flex items-center justify-center">
+                            <i class="fas fa-upload mr-1"></i> Import Backup
+                            <input type="file" id="import-file-input" onchange="importBackupData(event)" class="hidden" accept=".json">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Banner Slider -->
+                <div class="glass-card">
+                    <h3 class="font-black text-blue-600 mb-4 flex items-center gap-2"><i class="fas fa-images"></i> HOME BANNER SLIDER</h3>
+                    <div id="admin-banners-list" class="space-y-2 mb-3"></div>
+                    <div class="file-input-group">
+                        <div class="upload-box" id="banner-upload-box">
+                            <i class="fas fa-upload text-slate-400"></i>
+                            <span class="text-xs text-slate-500 block">Upload Banner</span>
+                            <input type="file" accept="image/*" onchange="cloudinaryBannerUpload(this)">
+                        </div>
+                        <input type="text" id="new-banner-url" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('new-banner-url', 'new-banner-preview', 'new-banner-preview-container')">
+                    </div>
+                    <div id="new-banner-preview-container" class="img-preview-container small hidden">
+                        <img id="new-banner-preview" src="" alt="Preview">
+                        <button onclick="clearImageField('new-banner-url', 'new-banner-preview', 'new-banner-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <button onclick="addAdminBanner()" class="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs soft-btn mt-2">Add Banner</button>
+                </div>
+
+                <!-- Popup Notice -->
+                <div class="glass-card">
+                    <h3 class="font-black text-blue-600 mb-4 flex items-center gap-2"><i class="fas fa-window-restore"></i> POPUP BANNER NOTICE</h3>
+                    <div class="flex items-center justify-between mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <label class="text-xs font-bold text-slate-700">Popup Active:</label>
+                        <input type="checkbox" id="pop-active" class="w-5 h-5 cursor-pointer accent-blue-600">
+                    </div>
+                    <label class="upload-label">Popup Image</label>
+                    <div class="file-input-group">
+                        <div class="upload-box" id="pop-upload-box">
+                            <i class="fas fa-upload text-slate-400"></i>
+                            <span class="text-xs text-slate-500 block">Upload Image</span>
+                            <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'pop-img-preview', 'pop-img', 'pop-upload-box')">
+                        </div>
+                        <input type="text" id="pop-img" placeholder="Or paste Image URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('pop-img', 'pop-img-preview', 'pop-img-preview-container')">
+                    </div>
+                    <div id="pop-img-preview-container" class="img-preview-container small hidden">
+                        <img id="pop-img-preview" src="" alt="Preview">
+                        <button onclick="clearImageField('pop-img', 'pop-img-preview', 'pop-img-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <label class="label">Notice Text</label>
+                    <textarea id="pop-text" class="soft-input h-20 text-xs"></textarea>
+                    <div class="grid grid-cols-2 gap-3 mb-2">
+                        <div>
+                            <label class="label">Button Text</label>
+                            <input type="text" id="pop-btn-txt" class="soft-input text-xs">
+                        </div>
+                        <div>
+                            <label class="label">Button Link</label>
+                            <input type="text" id="pop-btn-link" class="soft-input text-xs">
+                        </div>
+                    </div>
+                    <button onclick="savePopupNotice()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold soft-btn">Save Popup Notice</button>
+                </div>
+
+                <!-- App Branding -->
+                <div class="glass-card">
+                    <h3 class="font-black text-blue-600 mb-4 flex items-center gap-2"><i class="fas fa-palette"></i> APP BRANDING</h3>
+                    <label class="label">App Name</label>
+                    <input type="text" id="a-app-name" class="soft-input">
+                    <label class="upload-label">Logo</label>
+                    <div class="file-input-group">
+                        <div class="upload-box" id="a-logo-url-upload-box">
+                            <i class="fas fa-upload text-slate-400"></i>
+                            <span class="text-xs text-slate-500 block">Upload Logo</span>
+                            <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-logo-url-preview', 'a-logo-url', 'a-logo-url-upload-box')">
+                        </div>
+                        <input type="text" id="a-logo-url" placeholder="Or paste Logo URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-logo-url', 'a-logo-url-preview', 'a-logo-url-preview-container')">
+                    </div>
+                    <div id="a-logo-url-preview-container" class="img-preview-container small hidden">
+                        <img id="a-logo-url-preview" src="" alt="Preview">
+                        <button onclick="clearImageField('a-logo-url', 'a-logo-url-preview', 'a-logo-url-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <label class="upload-label">Banner URL</label>
+                    <div class="file-input-group">
+                        <div class="upload-box" id="a-banner-url-upload-box">
+                            <i class="fas fa-upload text-slate-400"></i>
+                            <span class="text-xs text-slate-500 block">Upload Banner</span>
+                            <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'a-banner-url-preview', 'a-banner-url', 'a-banner-url-upload-box')">
+                        </div>
+                        <input type="text" id="a-banner-url" placeholder="Or paste Banner URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('a-banner-url', 'a-banner-url-preview', 'a-banner-url-preview-container')">
+                    </div>
+                    <div id="a-banner-url-preview-container" class="img-preview-container small hidden">
+                        <img id="a-banner-url-preview" src="" alt="Preview">
+                        <button onclick="clearImageField('a-banner-url', 'a-banner-url-preview', 'a-banner-url-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <label class="label">Notice Message</label>
+                    <textarea id="a-notice" class="soft-input h-20"></textarea>
+                    <button onclick="saveIdentity()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold soft-btn mt-2">Save Branding</button>
+                </div>
+
+                <!-- Rank System -->
+                <div class="glass-card">
+                    <h3 class="font-black text-orange-600 mb-4 flex items-center gap-2"><i class="fas fa-trophy"></i> RANK SYSTEM</h3>
+                    <div id="rank-list" class="space-y-3 mb-4"></div>
+                    <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 space-y-2">
+                        <input type="text" id="r-name" placeholder="Rank Name (e.g., Gold)" class="soft-input bg-white mb-0">
+                        <input type="number" id="r-min" placeholder="Min Spend Amount" class="soft-input bg-white mb-0 font-bold">
+                        <label class="upload-label">Rank Icon</label>
+                        <div class="file-input-group">
+                            <div class="upload-box" id="r-icon-upload-box">
+                                <i class="fas fa-upload text-slate-400"></i>
+                                <span class="text-xs text-slate-500 block">Upload Icon</span>
+                                <input type="file" accept="image/*" onchange="cloudinaryUpload(this, 'r-icon-preview', 'r-icon', 'r-icon-upload-box')">
+                            </div>
+                            <input type="text" id="r-icon" placeholder="Or paste Icon URL" class="soft-input url-input bg-white mb-0 text-xs" oninput="updatePreviewFromUrl('r-icon', 'r-icon-preview', 'r-icon-preview-container')">
+                        </div>
+                        <div id="r-icon-preview-container" class="img-preview-container small hidden">
+                            <img id="r-icon-preview" src="" alt="Preview">
+                            <button onclick="clearImageField('r-icon', 'r-icon-preview', 'r-icon-preview-container')" class="remove-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                        <label class="label text-slate-700 mt-2">Rank Theme:</label>
+                        <select id="r-theme" class="soft-input bg-white font-bold text-slate-700">
+                            <option value="linear-gradient(135deg, #78716c 0%, #44403c 100%)">Gray-Bronze</option>
+                            <option value="linear-gradient(135deg, #64748b 0%, #1e293b 100%)">Gray-Silver</option>
+                            <option value="linear-gradient(135deg, #ca8a04 0%, #451a03 100%)">Gray-Gold</option>
+                            <option value="linear-gradient(135deg, #475569 0%, #0f172a 100%)">Gray-Platinum</option>
+                            <option value="linear-gradient(135deg, #0284c7 0%, #1e1b4b 100%)">Gray-Blue</option>
+                            <option value="linear-gradient(135deg, #dc2626 0%, #450a0a 100%)">Gray-Red</option>
+                            <option value="linear-gradient(135deg, #ea580c 0%, #431407 100%)">Gray-Orange</option>
+                            <option value="linear-gradient(135deg, #eab308 0%, #3f3f46 100%)">Gray-Yellow</option>
+                        </select>
+                        <button onclick="addRank()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold soft-btn mt-2">Add / Update Rank</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 h-20 flex justify-around items-center px-1 z-50 rounded-t-[30px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <div onclick="showAdminTab('orders')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn nav-active" id="nav-orders">
+                <i class="fas fa-bell text-lg mb-1 transition-all"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Requests</span>
+            </div>
+            <div onclick="showAdminTab('shop')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn" id="nav-shop">
+                <i class="fas fa-store text-lg mb-1 transition-all"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Store</span>
+            </div>
+            <div onclick="showAdminTab('ai')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn" id="nav-ai">
+                <i class="fas fa-robot text-lg mb-1 transition-all text-blue-600"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider text-blue-600">AI Bot</span>
+            </div>
+            <div onclick="showAdminTab('gateway')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn" id="nav-gateway">
+                <i class="fas fa-credit-card text-lg mb-1 transition-all"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Gateway</span>
+            </div>
+            <div onclick="showAdminTab('users')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn" id="nav-users">
+                <i class="fas fa-users-cog text-lg mb-1 transition-all"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Users</span>
+            </div>
+            <div onclick="showAdminTab('settings')" class="flex flex-col items-center text-slate-400 flex-1 soft-btn a-nav-btn" id="nav-settings">
+                <i class="fas fa-cog text-lg mb-1 transition-all"></i>
+                <span class="text-[9px] font-black uppercase tracking-wider">Settings</span>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+    // ====== FIREBASE CONFIGURATION ======
+    const firebaseConfig = {
+        apiKey: "AIzaSyAJtantZmX-Q_L_MXguM6rSMCVHZ8tuT2o",
+        authDomain: "x2d-topup-web-4faca.firebaseapp.com",
+        databaseURL: "https://x2d-topup-web-4faca-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "x2d-topup-web-4faca",
+        storageBucket: "x2d-topup-web-4faca.firebasestorage.app",
+        messagingSenderId: "652852264004",
+        appId: "1:652852264004:web:505436448ef76bad605011",
+        measurementId: "G-QHSX7P4HXK"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const auth = firebase.auth();
+    const storage = firebase.storage();
+    console.log("🔥 Admin Panel Connected!");
+
+    // ====== CLOUDINARY CONFIG ======
+    const CLOUDINARY_CLOUD_NAME = "txzvhrfn";
+    const CLOUDINARY_UPLOAD_PRESET = "my_preset";
+    const CLOUDINARY_UPLOAD_URL =
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    // ====== CLOUDINARY UPLOAD FUNCTION (Admin) ======
+    function cloudinaryUpload(input, previewId, targetId, boxId) {
+        const file = input.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            showPopup('Error', 'Image size must be less than 2MB!', 'error');
+            input.value = '';
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            showPopup('Error', 'Please upload an image file!', 'error');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById(previewId);
+            if (preview) {
+                preview.src = e.target.result;
+                const container = document.getElementById(previewId + '-container');
+                if (container) {
+                    container.classList.remove('hidden');
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+
+        const box = document.getElementById(boxId);
+        let overlay = null;
+        if (box) {
+            overlay = document.createElement('div');
+            overlay.className = 'uploading-overlay';
+            overlay.innerHTML = '<i class="fas fa-cloud-upload-alt fa-2x"></i><span>Uploading...</span>';
+            box.style.position = 'relative';
+            box.appendChild(overlay);
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                }
+
+                if (data.secure_url) {
+                    document.getElementById(targetId).value = data.secure_url;
+                    const preview = document.getElementById(previewId);
+                    if (preview) {
+                        preview.src = data.secure_url;
+                    }
+                    showPopup('Success', '✅ Image uploaded to Cloudinary!', 'success');
+                } else {
+                    showPopup('Error', 'Upload failed: ' + (data.error?.message || 'Unknown error'), 'error');
+                    const container = document.getElementById(previewId + '-container');
+                    if (container) {
+                        container.classList.add('hidden');
+                    }
+                    document.getElementById(targetId).value = '';
+                }
+            })
+            .catch(error => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                }
+                showPopup('Error', 'Upload failed: ' + error.message, 'error');
+                const container = document.getElementById(previewId + '-container');
+                if (container) {
+                    container.classList.add('hidden');
+                }
+                document.getElementById(targetId).value = '';
+            });
+    }
+
+    function cloudinaryBannerUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            showPopup('Error', 'Image size must be less than 2MB!', 'error');
+            input.value = '';
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            showPopup('Error', 'Please upload an image file!', 'error');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('new-banner-preview');
+            if (preview) {
+                preview.src = e.target.result;
+                document.getElementById('new-banner-preview-container').classList.remove('hidden');
+            }
+        };
+        reader.readAsDataURL(file);
+
+        const box = document.getElementById('banner-upload-box');
+        let overlay = null;
+        if (box) {
+            overlay = document.createElement('div');
+            overlay.className = 'uploading-overlay';
+            overlay.innerHTML = '<i class="fas fa-cloud-upload-alt fa-2x"></i><span>Uploading...</span>';
+            box.style.position = 'relative';
+            box.appendChild(overlay);
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        fetch(CLOUDINARY_UPLOAD_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                }
+                if (data.secure_url) {
+                    document.getElementById('new-banner-url').value = data.secure_url;
+                    const preview = document.getElementById('new-banner-preview');
+                    if (preview) {
+                        preview.src = data.secure_url;
+                    }
+                    showPopup('Success', '✅ Banner uploaded to Cloudinary!', 'success');
+                } else {
+                    showPopup('Error', 'Upload failed: ' + (data.error?.message || 'Unknown error'), 'error');
+                    document.getElementById('new-banner-preview-container').classList.add('hidden');
+                    document.getElementById('new-banner-url').value = '';
+                }
+            })
+            .catch(error => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                }
+                showPopup('Error', 'Upload failed: ' + error.message, 'error');
+                document.getElementById('new-banner-preview-container').classList.add('hidden');
+                document.getElementById('new-banner-url').value = '';
+            });
+    }
+
+    function updatePreviewFromUrl(inputId, previewId, containerId) {
+        const val = document.getElementById(inputId).value;
+        const preview = document.getElementById(previewId);
+        const container = document.getElementById(containerId);
+
+        if (val && (val.startsWith('data:image') || val.startsWith('http') || val.startsWith('https'))) {
+            preview.src = val;
+            if (container) {
+                container.classList.remove('hidden');
+            }
+        } else if (container) {
+            container.classList.add('hidden');
+        }
+    }
+
+    function clearImageField(inputId, previewId, containerId) {
+        document.getElementById(inputId).value = '';
+        document.getElementById(previewId).src = '';
+        document.getElementById(containerId).classList.add('hidden');
+    }
+
+    function showPreviewFromExisting(inputId, previewId, containerId) {
+        const val = document.getElementById(inputId).value;
+        if (val && (val.startsWith('data:image') || val.startsWith('http') || val.startsWith('https'))) {
+            document.getElementById(previewId).src = val;
+            document.getElementById(containerId).classList.remove('hidden');
+        }
+    }
+
+    // ====== ADMIN LOGIN SYSTEM ======
+    const ADMIN_EMAIL = "x2d.official@gmail.com";
+    const ADMIN_PASSWORD = "X2DGTP@2026";
+    const ADMIN_SESSION_KEY = "X2D_ADMIN_LOGGED_IN";
+
+    let isAdminLoggedIn = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+    let isFirstLogin = !isAdminLoggedIn;
+
+    function checkAdminLogin() {
+        const emailInput = document.getElementById('admin-email-input');
+        const passInput = document.getElementById('admin-pass-input');
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = passInput.value.trim();
+
+        if (isAdminLoggedIn) {
+            if (password === ADMIN_PASSWORD) {
+                showPopup('Success', 'Welcome back! Logging in...', 'success');
+                setTimeout(() => {
+                    document.getElementById('admin-login-screen').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    init();
+                }, 500);
+                return;
+            } else {
+                showPopup('Error', 'Wrong Password! Please try again.', 'error');
+                return;
+            }
+        }
+
+        if (!email || !password) {
+            showPopup('Error', 'Please enter both email and password!', 'error');
+            return;
+        }
+
+        if (email !== ADMIN_EMAIL) {
+            showPopup('Error', 'Invalid email!', 'error');
+            return;
+        }
+
+        if (password !== ADMIN_PASSWORD) {
+            showPopup('Error', 'Wrong Password! Please try again.', 'error');
+            return;
+        }
+
+        showPopup('Success', 'Login successful! Welcome to Admin Panel.', 'success');
+
+        isAdminLoggedIn = true;
+        isFirstLogin = false;
+        sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+
+        const emailContainer = document.getElementById('email-field-container');
+        if (emailContainer) {
+            emailContainer.style.display = 'none';
+        }
+        document.getElementById('login-subtext').innerText = 'Enter your secure password';
+
+        setTimeout(() => {
+            document.getElementById('admin-login-screen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            init();
+        }, 500);
+    }
+
+    // ====== ADMIN LIST MANAGEMENT ======
+    let adminList = ['x2d.official@gmail.com'];
+
+    function loadAdminList() {
+        const stored = localStorage.getItem('X2D_ADMIN_LIST');
+        if (stored) {
+            try {
+                adminList = JSON.parse(stored);
+                if (!adminList.includes('x2d.official@gmail.com')) {
+                    adminList.unshift('x2d.official@gmail.com');
+                    saveAdminList();
+                }
+            } catch (e) {
+                adminList = ['x2d.official@gmail.com'];
+            }
+        } else {
+            adminList = ['x2d.official@gmail.com'];
+            saveAdminList();
+        }
+    }
+
+    function saveAdminList() {
+        localStorage.setItem('X2D_ADMIN_LIST', JSON.stringify(adminList));
+    }
+
+    function openAdminModal() {
+        const modal = document.getElementById('admin-list-modal');
+        modal.classList.add('show');
+        renderAdminList();
+    }
+
+    function closeAdminModal() {
+        document.getElementById('admin-list-modal').classList.remove('show');
+    }
+
+    function renderAdminList() {
+        const container = document.getElementById('admin-list-content');
+        if (!container) return;
+
+        if (adminList.length === 0) {
+            container.innerHTML = '<div class="admin-list-empty">No admins found.</div>';
+            return;
+        }
+
+        let html = '';
+        adminList.forEach((email, index) => {
+            const isMainAdmin = email === 'x2d.official@gmail.com';
+            const name = email.split('@')[0];
+            const initials = name.substring(0, 2).toUpperCase();
+
+            html += `
+                        <div class="admin-list-item">
+                            <div class="admin-info">
+                                <div class="avatar">${initials}</div>
+                                <div class="details">
+                                    <div class="name">${name} ${isMainAdmin ? '⭐' : ''}</div>
+                                    <div class="email">${email}</div>
+                                </div>
+                            </div>
+                            ${!isMainAdmin ? `<button class="remove-btn" onclick="removeAdmin(${index})"><i class="fas fa-user-minus mr-1"></i> Remove</button>` : '<span class="text-xs text-blue-600 font-bold">Main Admin</span>'}
+                        </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function removeAdmin(index) {
+        const email = adminList[index];
+        if (email === 'x2d.official@gmail.com') {
+            showPopup('Warning', 'Cannot remove the main admin!', 'warning');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to remove "${email}" from admin list?`)) {
+            adminList.splice(index, 1);
+            saveAdminList();
+            renderAdminList();
+            showPopup('Success', 'Admin removed successfully!', 'success');
+        }
+    }
+
+    loadAdminList();
+
+    // ====== POPUP SYSTEM ======
+    function showPopup(title, desc, type = 'info', duration = 4000) {
+        const container = document.getElementById('popup-container');
+        if (!container) return;
+
+        const popup = document.createElement('div');
+        popup.className = `popup-item ${type}`;
+
+        let iconHtml = '';
+        if (type === 'success') {
+            iconHtml = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            iconHtml = '<i class="fas fa-times-circle"></i>';
+        } else if (type === 'warning') {
+            iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
+        } else {
+            iconHtml = '<i class="fas fa-info-circle"></i>';
+        }
+
+        popup.innerHTML = `
+                    <div class="popup-icon">${iconHtml}</div>
+                    <div class="popup-content">
+                        <div class="popup-title">${title}</div>
+                        <div class="popup-desc">${desc}</div>
+                    </div>
+                    <button class="popup-close" onclick="closePopup(this)"><i class="fas fa-times"></i></button>
+                    <div class="popup-progress"></div>
+                `;
+
+        container.appendChild(popup);
+
+        setTimeout(() => {
+            closePopup(popup);
+        }, duration);
+
+        return popup;
+    }
+
+    function closePopup(el) {
+        if (el.classList.contains('hiding')) return;
+        el.classList.add('hiding');
+        setTimeout(() => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 400);
+    }
+
+    window.alert = function(msg) {
+        showPopup('Alert', msg, 'warning', 4000);
+    };
+
+    // ====== FIREBASE DATABASE FUNCTIONS ======
+    let db = null;
+
+    function saveToFirebase(path, data) {
+        if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+            console.warn("⚠️ Empty data block, save aborted.");
+            return Promise.resolve();
+        }
+        return database.ref(path).set(data)
+            .then(() => console.log(`✅ Data saved to Firebase: ${path}`))
+            .catch(error => console.error("❌ Firebase save error:", error));
+    }
+
+    function loadFromFirebase(path) {
+        return database.ref(path).once('value')
+            .then(snapshot => snapshot.val())
+            .catch(error => console.error("❌ Firebase load error:", error));
+    }
+
+    function saveDB() {
+        if (!db) return;
+        if (!db.ranks) db.ranks = [];
+        if (!db.products) db.products = [];
+        if (!db.sections) db.sections = [];
+        if (!db.offers) db.offers = [];
+        if (!db.adminOrders) db.adminOrders = [];
+        if (!db.users) db.users = [];
+        if (!db.customMethods) db.customMethods = [];
+        if (!db.banners) db.banners = [];
+        if (!db.usedTrxIds) db.usedTrxIds = [];
+        if (!db.gatewayUI) db.gatewayUI = {};
+        if (!db.popupNotice) db.popupNotice = {};
+        if (!db.userReports) db.userReports = [];
+
+        saveToFirebase('x2d_database', db);
+    }
+
+    function loadDB() {
+        return loadFromFirebase('x2d_database').then(data => {
+            if (data && Object.keys(data).length > 0) {
+                db = data;
+                console.log("✅ Database loaded from Firebase");
+                return db;
+            } else {
+                db = {
+                    appName: "X2D TOPUP",
+                    logo: "https://i.ibb.co/F8mYvL5/logo.png",
+                    banner: "https://i.ibb.co/p0S0vS9/banner.jpg",
+                    banners: ["https://i.ibb.co/p0S0vS9/banner.jpg"],
+                    notice: "Welcome to X2D!",
+                    bkash: "01700000000",
+                    nagad: "01800000000",
+                    bkashLogo: "https://i.ibb.co/6P0P6m8/bkash.png",
+                    nagadLogo: "https://i.ibb.co/3cYc53M/nagad.png",
+                    instantPayImg: "",
+                    walletPayImg: "",
+                    depositImg: "",
+                    tutorialLink: "",
+                    popupNotice: { active: false, img: "", text: "", btnText: "", btnLink: "" },
+                    sections: [],
+                    products: [],
+                    offers: [],
+                    adminOrders: [],
+                    users: [],
+                    ranks: [
+                        { name: "Bronze", min: 0, icon: "https://i.ibb.co/hX4tFpP/bronze.png", theme: "linear-gradient(135deg, #78716c 0%, #44403c 100%)" },
+                        { name: "Silver", min: 100, icon: "https://i.ibb.co/hX4tFpP/silver.png", theme: "linear-gradient(135deg, #64748b 0%, #1e293b 100%)" },
+                        { name: "Gold", min: 1000, icon: "https://i.ibb.co/5G8j72G/gold.png", theme: "linear-gradient(135deg, #ca8a04 0%, #451a03 100%)" },
+                        { name: "Platinum", min: 5000, icon: "https://i.ibb.co/5G8j72G/gold.png", theme: "linear-gradient(135deg, #475569 0%, #0f172a 100%)" }
+                    ],
+                    customMethods: [],
+                    gatewayUI: { title: "ট্রানজেকশন আইডি দিন", step2: '"Send Money" -এ ক্লিক করুন।', verifyBtn: "VERIFY", bkashInstr: "*247# ডায়াল করুন", nagadInstr: "*167# ডায়াল করুন" },
+                    aiAutoApprove: false,
+                    aiRankControl: false,
+                    usedTrxIds: [],
+                    userReports: []
+                };
+                saveDB();
+                return db;
+            }
+        });
+    }
+
+    // ====== REAL-TIME SYNC ======
+    function syncRealtime() {
+        database.ref('x2d_database').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data && Object.keys(data).length > 0) {
+                db = data;
+                console.log("🔄 Real-time sync: Database updated");
+                render();
+            }
+        });
+    }
+
+    // ====== EDIT UI MODAL FUNCTIONS ======
+    let editingMethodId = null;
+
+    function openEditUIModal(methodId) {
+        const method = db.customMethods.find(m => m.id === methodId);
+        if (!method) return;
+
+        editingMethodId = methodId;
+        document.getElementById('edit-ui-method-name').innerText = `Editing: ${method.name}`;
+
+        const ui = method.transactionUI || {};
+        document.getElementById('edit-ui-title').value = ui.title || '';
+        document.getElementById('edit-ui-step2').value = ui.step2 || '';
+        document.getElementById('edit-ui-verifybtn').value = ui.verifyBtn || '';
+        document.getElementById('edit-ui-instr').value = ui.instr || '';
+
+        document.getElementById('edit-ui-modal').classList.add('show');
+    }
+
+    function closeEditUIModal() {
+        document.getElementById('edit-ui-modal').classList.remove('show');
+        editingMethodId = null;
+    }
+
+    function saveEditUI() {
+        if (editingMethodId === null) return;
+
+        const method = db.customMethods.find(m => m.id === editingMethodId);
+        if (!method) return;
+
+        const title = document.getElementById('edit-ui-title').value.trim();
+        const step2 = document.getElementById('edit-ui-step2').value.trim();
+        const verifyBtn = document.getElementById('edit-ui-verifybtn').value.trim();
+        const instr = document.getElementById('edit-ui-instr').value.trim();
+
+        method.transactionUI = {
+            title: title || 'ট্রানজেকশন আইডি দিন',
+            step2: step2 || '"Send Money" -এ ক্লিক করুন।',
+            verifyBtn: verifyBtn || 'VERIFY',
+            instr: instr || 'সঠিক তথ্য দিন'
+        };
+
+        saveDB();
+        closeEditUIModal();
+        render();
+        showPopup('Success', '✅ Transaction UI updated for ' + method.name, 'success');
+    }
+
+    // ====== ADMIN FUNCTIONS ======
+    function init() {
+        loadDB().then(() => {
+            document.getElementById('a-app-name').value = db.appName || '';
+            document.getElementById('a-logo-url').value = db.logo || '';
+            document.getElementById('a-banner-url').value = db.banner || '';
+            document.getElementById('a-notice').value = db.notice || '';
+            document.getElementById('a-bkash').value = db.bkash || '';
+            document.getElementById('a-nagad').value = db.nagad || '';
+            document.getElementById('a-bkash-logo').value = db.bkashLogo || '';
+            document.getElementById('a-nagad-logo').value = db.nagadLogo || '';
+            document.getElementById('a-instant-pay-img').value = db.instantPayImg || '';
+            document.getElementById('a-wallet-pay-img').value = db.walletPayImg || '';
+            document.getElementById('a-deposit-img').value = db.depositImg || '';
+            document.getElementById('a-tutorial-link').value = db.tutorialLink || '';
+
+            showPreviewFromExisting('a-logo-url', 'a-logo-url-preview', 'a-logo-url-preview-container');
+            showPreviewFromExisting('a-banner-url', 'a-banner-url-preview', 'a-banner-url-preview-container');
+            showPreviewFromExisting('a-bkash-logo', 'a-bkash-logo-preview', 'a-bkash-logo-preview-container');
+            showPreviewFromExisting('a-nagad-logo', 'a-nagad-logo-preview', 'a-nagad-logo-preview-container');
+            showPreviewFromExisting('a-deposit-img', 'a-deposit-img-preview', 'a-deposit-img-preview-container');
+            showPreviewFromExisting('a-wallet-pay-img', 'a-wallet-pay-img-preview', 'a-wallet-pay-img-preview-container');
+            showPreviewFromExisting('a-instant-pay-img', 'a-instant-pay-img-preview', 'a-instant-pay-img-preview-container');
+            showPreviewFromExisting('pop-img', 'pop-img-preview', 'pop-img-preview-container');
+
+            if (db.popupNotice) {
+                document.getElementById('pop-active').checked = !!db.popupNotice.active;
+                document.getElementById('pop-img').value = db.popupNotice.img || '';
+                document.getElementById('pop-text').value = db.popupNotice.text || '';
+                document.getElementById('pop-btn-txt').value = db.popupNotice.btnText || '';
+                document.getElementById('pop-btn-link').value = db.popupNotice.btnLink || '';
+            }
+
+            document.getElementById('ui-title').value = db.gatewayUI.title || '';
+            document.getElementById('ui-step2').value = db.gatewayUI.step2 || '';
+            document.getElementById('ui-btn').value = db.gatewayUI.verifyBtn || '';
+            document.getElementById('ui-bkash-instr').value = db.gatewayUI.bkashInstr || '';
+            document.getElementById('ui-nagad-instr').value = db.gatewayUI.nagadInstr || '';
+
+            const aiToggle = document.getElementById('ai-auto-toggle');
+            if (aiToggle) {
+                aiToggle.checked = !!db.aiAutoApprove;
+                updateAIStatusText(db.aiAutoApprove);
+            }
+
+            const aiRankToggle = document.getElementById('ai-rank-toggle');
+            if (aiRankToggle) {
+                aiRankToggle.checked = !!db.aiRankControl;
+                updateAIRankStatusText(db.aiRankControl);
+            }
+
+            render();
+            syncRealtime();
+        });
+    }
+
+    function render() {
+        if (!db) return;
+        saveDB();
+        autoDeleteOutOfStockOffers();
+
+        document.getElementById('stat-users').innerText = db.users.length;
+        document.getElementById('stat-revenue').innerText = '৳' + db.users.reduce((sum, u) => sum + (u.totalSpend || 0), 0);
+
+        renderBannersAdminList();
+
+        // Claimed Offers
+        const claimedListEl = document.getElementById('admin-claimed-offers-list');
+        claimedListEl.innerHTML = '';
+        let totalClaimLogs = 0;
+
+        if (db.offers) {
+            db.offers.forEach(off => {
+                if (off.claimedByEmails && off.claimedByEmails.length > 0) {
+                    off.claimedByEmails.forEach((email, idx) => {
+                        totalClaimLogs++;
+                        const uid = (off.claimedByUids && off.claimedByUids[idx]) ? off.claimedByUids[idx] : 'N/A';
+                        const uObj = db.users.find(u => u.email === email);
+                        const uName = uObj ? uObj.name : 'Unknown User';
+
+                        claimedListEl.innerHTML += `
+                                    <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-200/60 flex justify-between items-center text-xs hover:shadow-sm transition-all">
+                                        <div>
+                                            <b class="text-slate-800 block">${off.title}</b>
+                                            <span class="text-[11px] font-bold text-blue-600">User: ${uName} (${email})</span>
+                                            <span class="text-[10px] font-mono text-gray-500 block">Game UID: ${uid} | Price: ${off.price}</span>
+                                        </div>
+                                        <button onclick="deleteClaimedOfferLog(${off.id}, '${email}')" class="bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg font-bold soft-btn border border-red-200"><i class="fas fa-trash"></i></button>
+                                    </div>`;
+                    });
+                }
+            });
+        }
+        document.getElementById('claimed-offers-count').innerText = totalClaimLogs;
+        if (totalClaimLogs === 0) {
+            claimedListEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">No offers claimed yet.</p>';
+        }
+
+        // Reports
+        const reportsListEl = document.getElementById('admin-reports-list');
+        reportsListEl.innerHTML = '';
+        if (!db.userReports) db.userReports = [];
+        const totalReports = db.userReports.length;
+        document.getElementById('admin-reports-count').innerText = totalReports;
+
+        if (totalReports > 0) {
+            db.userReports.slice().reverse().forEach(rep => {
+                reportsListEl.innerHTML += `
+                            <div class="bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100 flex justify-between items-start text-xs hover:shadow-sm transition-all">
+                                <div class="w-full mr-2">
+                                    <span class="bg-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">${rep.reportId}</span>
+                                    <b class="text-slate-800 block mt-1">👤 ${rep.userName} <span class="text-gray-500 font-mono text-[10px]">(${rep.userEmail})</span></b>
+                                    <p class="text-slate-700 font-bold mt-1 bg-white/95 p-2 rounded-xl border border-indigo-50">💬 "${rep.msg}"</p>
+                                    <span class="text-[9px] font-bold text-gray-400 mt-1 block">📅 ${rep.date || 'Today'}</span>
+                                </div>
+                                <button onclick="deleteUserReport('${rep.reportId}')" class="bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg font-bold soft-btn border border-red-200 flex-shrink-0"><i class="fas fa-trash"></i></button>
+                            </div>`;
+            });
+        } else {
+            reportsListEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">No user reports submitted.</p>';
+        }
+
+        // Users
+        const ul = document.getElementById('user-list-admin');
+        ul.innerHTML = '';
+        if (db.users.length === 0) ul.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">No users registered yet.</p>';
+        db.users.forEach(u => {
+            const isBlocked = !!u.isBlocked;
+            const blockBtnClass = isBlocked ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-700';
+            const blockTxt = isBlocked ? 'Unblock' : 'Block';
+            const limitTxt = u.maxLimit ? `৳${u.maxLimit}` : 'Unlimited';
+
+            ul.innerHTML += `
+                        <div class="admin-user-item bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 hover:shadow-md transition-all duration-300">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <b class="text-sm text-slate-800 flex items-center gap-1.5">${u.name} ${isBlocked ? '<span class="text-[9px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-full">BLOCKED</span>' : ''}</b>
+                                    <span class="text-[10px] text-gray-500 font-mono block mt-0.5">${u.email}</span>
+                                    <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded inline-block mt-1">Limit: ${limitTxt}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-blue-600 font-black text-sm">৳${u.balance || 0}</span>
+                                    <p class="text-[10px] font-bold text-gray-400 mt-0.5">Spent: ৳${u.totalSpend || 0}</p>
+                                </div>
+                            </div>
+
+                            ${u.warningMsg ? `<div class="bg-amber-50 border border-amber-200 text-amber-800 p-2 rounded-xl text-xs font-bold"><i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i> Warning: ${u.warningMsg}</div>` : ''}
+
+                            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                                <button onclick="editUserBalance('${u.email}')" class="text-[11px] bg-blue-50 text-blue-600 py-2 rounded-xl font-bold soft-btn border border-blue-100 flex items-center justify-center gap-1"><i class="fas fa-edit"></i> Edit Balance</button>
+                                <button onclick="setUserLimit('${u.email}')" class="text-[11px] bg-indigo-50 text-indigo-600 py-2 rounded-xl font-bold soft-btn border border-indigo-100 flex items-center justify-center gap-1"><i class="fas fa-sliders-h"></i> Set Limit</button>
+                                <button onclick="sendWarningUser('${u.email}')" class="text-[11px] bg-amber-50 text-amber-700 py-2 rounded-xl font-bold soft-btn border border-amber-100 flex items-center justify-center gap-1"><i class="fas fa-exclamation-circle"></i> Warning</button>
+                                <button onclick="toggleBlockUser('${u.email}')" class="text-[11px] ${blockBtnClass} py-2 rounded-xl font-bold soft-btn border flex items-center justify-center gap-1"><i class="fas fa-ban"></i> ${blockTxt}</button>
+                                <button onclick="deleteUser('${u.email}')" class="col-span-2 text-[11px] bg-red-50 text-red-600 py-2 rounded-xl font-bold soft-btn border border-red-200 flex items-center justify-center gap-1"><i class="fas fa-trash-alt"></i> Delete User</button>
+                            </div>
+                        </div>`;
+        });
+
+        // Offers
+        const offList = document.getElementById('admin-offers-list');
+        offList.innerHTML = '';
+        if (!db.offers || db.offers.length === 0) {
+            offList.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">No offers added yet.</p>';
+        } else {
+            db.offers.forEach(o => {
+                const isOut = !o.inStock || (o.totalLimit > 0 && (o.claimedCount || 0) >= o.totalLimit);
+                const stockBtnClass = !isOut ? 'bg-green-500 text-white' : 'bg-orange-500 text-white';
+                const stockTxt = !isOut ? 'In Stock' : 'Out of Stock';
+                const limitText = o.totalLimit > 0 ? `${o.claimedCount || 0}/${o.totalLimit}` : `${o.claimedCount || 0}/Unlimited`;
+                const remaining = o.totalLimit > 0 ? (o.totalLimit - (o.claimedCount || 0)) : '∞';
+
+                let remainingClass = 'good';
+                let remainingDisplay = remaining;
+                if (o.totalLimit > 0) {
+                    if (remaining <= 0) {
+                        remainingClass = 'soon';
+                        remainingDisplay = 'Out of Stock';
+                    } else if (remaining <= 2) {
+                        remainingClass = 'soon';
+                    }
+                }
+
+                offList.innerHTML += `
+                            <div class="offer-card-admin bg-white p-3 rounded-xl shadow-sm border flex justify-between items-center hover:shadow-md transition-all ${isOut ? 'out-of-stock' : ''}">
+                                <div class="flex items-center gap-3">
+                                    <div class="opt-img-wrap square-48">
+                                        <img src="${o.img}" class="opt-img" onerror="this.src='https://i.ibb.co/p0S0vS9/banner.jpg'">
+                                    </div>
+                                    <div>
+                                        <b class="text-slate-800 text-xs">${o.title}</b>
+                                        <br><span class="text-[10px] font-bold text-orange-500">${o.price}</span>
+                                        <br>
+                                        <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Claimed: ${limitText}</span>
+                                        <span class="offer-limit-badge-admin ${remainingClass} ml-1">
+                                            <i class="fas fa-tag mr-1"></i> Left: ${remainingDisplay}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="toggleOfferStock(${o.id})" class="text-[10px] px-2.5 py-1.5 rounded-lg font-black ${stockBtnClass}">${stockTxt}</button>
+                                    <button onclick="deleteOffer(${o.id})" class="text-red-500 p-2 soft-btn bg-red-50 rounded-lg"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>`;
+            });
+        }
+
+        // Ranks
+        const rl = document.getElementById('rank-list');
+        rl.innerHTML = '';
+        if (db.ranks) {
+            db.ranks.forEach(r => {
+                rl.innerHTML += `
+                            <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                                <div class="opt-img-wrap square-40">
+                                    <img src="${r.icon}" class="opt-img" onerror="this.src='https://i.ibb.co/hX4tFpP/bronze.png'">
+                                </div>
+                                <div class="flex-1 px-3">
+                                    <b class="text-slate-800 text-xs">${r.name}</b><br>
+                                    <span class="text-gray-400 text-[10px] font-bold">Min Spend: ৳${r.min}</span>
+                                </div>
+                                <button onclick="delRank('${r.name}')" class="text-red-500 p-2 soft-btn bg-red-50 rounded-lg"><i class="fas fa-trash"></i></button>
+                            </div>`;
+            });
+        }
+
+        // Pending Orders
+        const ol = document.getElementById('a-req-list');
+        ol.innerHTML = '';
+        const pendings = db.adminOrders;
+        document.getElementById('pending-count').innerText = pendings.length;
+        if (pendings.length === 0) ol.innerHTML =
+            `<div class="text-center py-10 text-gray-400 font-bold bg-white rounded-2xl border border-dashed"><i class="fas fa-check-circle text-4xl mb-2 text-green-400 opacity-50 animate-bounce"></i><p>All clear! No pending requests.</p></div>`;
+        pendings.forEach(r => {
+            const reqType = r.type ? r.type.toLowerCase() : 'deposit';
+            const reqGlow = reqType === 'deposit' ? 'glow-emerald border-emerald-500/10' :
+                'glow-blue border-blue-500/10';
+            ol.innerHTML +=
+                `<div class="req-item p-4 border rounded-2xl bg-white shadow-sm transition-all duration-300 ${reqGlow}" data-type="${reqType}"><div class="flex justify-between font-black text-slate-800 mb-2 border-b pb-2"><span class="flex items-center gap-2"><i class="fas ${r.type=='Deposit'?'fa-wallet text-green-500':'fa-gamepad text-blue-500'}"></i> ${r.title}</span><span class="text-blue-600 text-lg">৳${r.price}</span></div><div class="text-xs text-gray-600 space-y-2 mb-4"><p class="bg-slate-50 p-2 rounded-lg"><i class="fas fa-user text-gray-400 w-4"></i> <b class="text-slate-700">${r.userName}</b> (${r.userEmail})</p><p class="bg-yellow-50 p-2 rounded-lg border border-yellow-100"><i class="fas fa-info-circle text-yellow-600 w-4"></i> Trx / ID: <span class="font-mono font-bold text-yellow-800 ml-1 tracking-wider">${r.trx || 'N/A'}</span></p></div><div class="grid grid-cols-2 gap-3"><button onclick="reject(${r.id})" class="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold soft-btn border border-red-200"><i class="fas fa-times mr-1"></i> Reject</button><button onclick="approve(${r.id})" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold soft-btn shadow-md shadow-green-200"><i class="fas fa-check mr-1"></i> Approve</button></div></div>`;
+        });
+
+        // Categories
+        const cSlider = document.getElementById('cat-slider-admin');
+        cSlider.innerHTML = '';
+        const sel = document.getElementById('sel-sec');
+        sel.innerHTML = '<option value="">-- Select Category --</option>';
+        db.sections.forEach(s => {
+            cSlider.innerHTML += `
+                        <div class="min-w-[90px] p-3 bg-white border border-slate-200 rounded-2xl text-center relative snap-center shadow-sm hover:scale-105 transition-transform">
+                            <button onclick="delSection('${s.name}')" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs soft-btn shadow-md flex items-center justify-center"><i class="fas fa-times"></i></button>
+                            <div class="opt-img-wrap square-40 mx-auto mb-1">
+                                <img src="${s.img}" class="opt-img" onerror="this.src='https://i.ibb.co/hX4tFpP/diamond.png'">
+                            </div>
+                            <p class="text-[10px] font-black text-slate-700 truncate">${s.name}</p>
+                        </div>`;
+                sel.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+        });
+
+        // Products
+        const pList = document.getElementById('product-list');
+        pList.innerHTML = '';
+        db.products.forEach(p => {
+            pList.innerHTML += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:shadow-md transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="opt-img-wrap square-48">
+                                    <img src="${p.img || 'https://i.ibb.co/hX4tFpP/diamond.png'}" class="opt-img" onerror="this.src='https://i.ibb.co/hX4tFpP/diamond.png'">
+                                </div>
+                                <div>
+                                    <b class="text-slate-800 text-sm">${p.name}</b>
+                                    <p class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded inline-block mt-1">${p.section}</p>
+                                </div>
+                            </div>
+                            <button onclick="delProduct(${p.id})" class="text-red-500 bg-red-50 p-2 rounded-lg soft-btn"><i class="fas fa-trash"></i></button>
+                        </div>`;
+        });
+
+        // Custom Methods with Edit UI button
+        const pml = document.getElementById('custom-methods-list');
+        pml.innerHTML = '';
+        if (db.customMethods.length === 0) pml.innerHTML =
+            '<p class="text-xs text-gray-400">No extra payment methods added yet.</p>';
+        db.customMethods.forEach(m => {
+            pml.innerHTML += `
+                        <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="opt-img-wrap square-40" style="background-color: ${m.color}">
+                                    ${m.logo ? `<img src="${m.logo}" class="opt-img">` : `<i class="fas fa-wallet text-white text-xl flex items-center justify-center w-full h-full"></i>`}
+                                </div>
+                                <div>
+                                    <b class="text-slate-800 text-sm">${m.name}</b><br>
+                                    <span class="text-xs text-gray-500 font-bold font-mono">${m.num}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="openEditUIModal(${m.id})" class="text-indigo-600 bg-indigo-50 p-2 rounded-lg soft-btn hover:bg-indigo-100 transition" title="Edit Transaction UI">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button onclick="deletePaymentMethod(${m.id})" class="text-red-500 p-2 soft-btn bg-red-50 rounded-lg"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+        });
+    }
+
+    function autoDeleteOutOfStockOffers() {
+        if (!db.offers) return;
+        let deleted = false;
+        db.offers = db.offers.filter(offer => {
+            const isOutOfStock = !offer.inStock || (offer.totalLimit > 0 && (offer.claimedCount || 0) >= offer.totalLimit);
+            if (isOutOfStock) {
+                deleted = true;
+                return false;
+            }
+            return true;
+        });
+        if (deleted) {
+            saveDB();
+        }
+        return deleted;
+    }
+
+    function exportBackupData() {
+        if (!db) {
+            showPopup('Error', 'No data to export!', 'error');
+            return;
+        }
+        loadDB().then(() => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `app_backup_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showPopup('Success', '✅ Backup exported successfully!', 'success');
+        });
+    }
+
+    function importBackupData(event) {
+        const fileReader = new FileReader();
+        fileReader.onload = function(e) {
+            try {
+                const importedDB = JSON.parse(e.target.result);
+                if (importedDB && typeof importedDB === 'object') {
+                    db = importedDB;
+                    saveDB();
+                    showPopup('Success', '✅ Backup restored successfully!', 'success');
+                    location.reload();
+                }
+            } catch (err) {
+                showPopup('Error', 'Invalid JSON file!', 'error');
+            }
+        };
+        if (event.target.files[0]) {
+            fileReader.readAsText(event.target.files[0]);
+        }
+    }
+
+    function toggleAIAutoApprove() {
+        const checked = document.getElementById('ai-auto-toggle').checked;
+        db.aiAutoApprove = checked;
+        updateAIStatusText(checked);
+        saveDB();
+        showPopup('AI System', checked ? '✅ AI Auto Approve: ENABLED' : '❌ AI Auto Approve: DISABLED', checked ?
+            'success' : 'warning');
+    }
+
+    function updateAIStatusText(status) {
+        const txt = document.getElementById('ai-status-text');
+        if (txt) {
+            txt.innerText = status ? "ENABLED" : "DISABLED";
+            txt.className = status ? "text-[10px] font-bold text-green-600" :
+                "text-[10px] font-bold text-gray-500";
+        }
+    }
+
+    function toggleAIRankControl() {
+        const checked = document.getElementById('ai-rank-toggle').checked;
+        db.aiRankControl = checked;
+        updateAIRankStatusText(checked);
+        saveDB();
+        showPopup('AI System', checked ? '✅ AI Rank Manager: ENABLED' : '❌ AI Rank Manager: DISABLED', checked ?
+            'success' : 'warning');
+    }
+
+    function updateAIRankStatusText(status) {
+        const txt = document.getElementById('ai-rank-status-text');
+        if (txt) {
+            txt.innerText = status ? "AI AUTOMATED" : "MANUAL";
+            txt.className = status ? "text-[10px] font-bold text-purple-600" :
+                "text-[10px] font-bold text-gray-500";
+        }
+    }
+
+    function showAdminTab(t) {
+        document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('active');
+            setTimeout(() => el.classList.add('hidden'), 10); });
+        const target = document.getElementById('tab-' + t);
+        target.classList.remove('hidden');
+        setTimeout(() => target.classList.add('active'), 20);
+        document.querySelectorAll('.a-nav-btn').forEach(el => el.classList.remove('nav-active'));
+        document.getElementById('nav-' + t).classList.add('nav-active');
+    }
+
+    function askAdminAI(type) {
+        const out = document.getElementById('admin-ai-output');
+        out.classList.remove('hidden');
+        if (type === 'summary') {
+            const totalUsers = db.users.length;
+            const totalRev = db.users.reduce((sum, u) => sum + (u.totalSpend || 0), 0);
+            const totalBal = db.users.reduce((sum, u) => sum + (u.balance || 0), 0);
+            const pendings = db.adminOrders.length;
+            out.innerHTML = `<b>🤖 AI Report Summary:</b><br>
+                        • Total Registered Users: ${totalUsers}<br>
+                        • Total Sales Revenue: ৳${totalRev}<br>
+                        • Total Wallet Balance: ৳${totalBal}<br>
+                        • Pending Orders: ${pendings}<br>
+                        • Status: System fully optimized and secure.`;
+        } else if (type === 'pending') {
+            const pendings = db.adminOrders.length;
+            out.innerHTML = `<b>🤖 AI Pending Analysis:</b><br>
+                        Currently ${pendings} orders pending. ${db.aiAutoApprove ? '✅ AI Auto Approve is enabled, orders are being processed automatically.' : '⚠️ Please manually approve or reject them.'}`;
+        }
+    }
+
+    function askAIReportAssistant() {
+        const q = document.getElementById('ai-report-query').value.trim().toLowerCase();
+        const resBox = document.getElementById('ai-report-response');
+        resBox.classList.remove('hidden');
+
+        if (!q) {
+            resBox.innerText = "Please enter a keyword (e.g., 'payment', 'topup', 'id') to search.";
+            return;
+        }
+
+        if (!db.userReports || db.userReports.length === 0) {
+            resBox.innerText = "No user reports found.";
+            return;
+        }
+
+        const matched = db.userReports.filter(r =>
+            r.msg.toLowerCase().includes(q) ||
+            r.userName.toLowerCase().includes(q) ||
+            r.reportId.toLowerCase().includes(q)
+        );
+
+        if (matched.length > 0) {
+            resBox.innerHTML = `🤖 Found (${matched.length}) reports:<br>` + matched.map(m =>
+                `• [${m.reportId}] <b>${m.userName}</b>: "${m.msg}"`).join('<br>');
+        } else {
+            resBox.innerText = `🤖 No reports found for "${q}".`;
+        }
+    }
+
+    function saveIdentity() {
+        db.appName = document.getElementById('a-app-name').value;
+        db.logo = document.getElementById('a-logo-url').value;
+        db.banner = document.getElementById('a-banner-url').value;
+        db.notice = document.getElementById('a-notice').value;
+        saveDB();
+        showPopup('Success', '✅ App Branding Updated!', 'success');
+    }
+
+    function addAdminBanner() {
+        const url = document.getElementById('new-banner-url').value.trim();
+        if (!url) return showPopup('Error', 'Please enter banner image URL!', 'error');
+        if (!db.banners) db.banners = [];
+        db.banners.push(url);
+        document.getElementById('new-banner-url').value = '';
+        document.getElementById('new-banner-preview').src = '';
+        document.getElementById('new-banner-preview-container').classList.add('hidden');
+        saveDB();
+        renderBannersAdminList();
+        showPopup('Success', '✅ Banner added successfully!', 'success');
+    }
+
+    function deleteAdminBanner(index) {
+        if (!db.banners) return;
+        db.banners.splice(index, 1);
+        saveDB();
+        renderBannersAdminList();
+        showPopup('Success', '✅ Banner deleted!', 'success');
+    }
+
+    function renderBannersAdminList() {
+        const bList = document.getElementById('admin-banners-list');
+        if (!bList) return;
+        bList.innerHTML = '';
+        if (!db.banners || db.banners.length === 0) {
+            bList.innerHTML = '<p class="text-xs text-gray-400">No banners added yet.</p>';
+            return;
+        }
+        db.banners.forEach((b, idx) => {
+            bList.innerHTML += `
+                        <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
+                            <div class="flex items-center gap-2 truncate">
+                                <div class="opt-img-wrap square-40">
+                                    <img src="${b}" class="opt-img" onerror="this.src='https://i.ibb.co/p0S0vS9/banner.jpg'">
+                                </div>
+                                <span class="font-mono truncate text-[11px] text-slate-700">${b}</span>
+                            </div>
+                            <button onclick="deleteAdminBanner(${idx})" class="text-red-500 bg-red-50 p-1.5 rounded-lg soft-btn"><i class="fas fa-trash"></i></button>
+                        </div>`;
+        });
+    }
+
+    function savePopupNotice() {
+        if (!db.popupNotice) db.popupNotice = {};
+        db.popupNotice.active = document.getElementById('pop-active').checked;
+        db.popupNotice.img = document.getElementById('pop-img').value;
+        db.popupNotice.text = document.getElementById('pop-text').value;
+        db.popupNotice.btnText = document.getElementById('pop-btn-txt').value;
+        db.popupNotice.btnLink = document.getElementById('pop-btn-link').value;
+        saveDB();
+        showPopup('Success', '✅ Popup Notice Saved!', 'success');
+    }
+
+    function saveGatewaySettings() {
+        db.bkash = document.getElementById('a-bkash').value;
+        db.nagad = document.getElementById('a-nagad').value;
+        db.bkashLogo = document.getElementById('a-bkash-logo').value;
+        db.nagadLogo = document.getElementById('a-nagad-logo').value;
+        db.instantPayImg = document.getElementById('a-instant-pay-img').value;
+        db.walletPayImg = document.getElementById('a-wallet-pay-img').value;
+        db.depositImg = document.getElementById('a-deposit-img').value;
+        db.tutorialLink = document.getElementById('a-tutorial-link').value.trim();
+
+        db.gatewayUI = {
+            title: document.getElementById('ui-title').value,
+            step2: document.getElementById('ui-step2').value,
+            verifyBtn: document.getElementById('ui-btn').value,
+            bkashInstr: document.getElementById('ui-bkash-instr').value,
+            nagadInstr: document.getElementById('ui-nagad-instr').value
+        };
+        saveDB();
+        showPopup('Success', '✅ Gateway Settings Updated!', 'success');
+    }
+
+    function addOffer() {
+        const title = document.getElementById('off-title').value.trim();
+        const price = document.getElementById('off-price').value.trim();
+        const limit = parseInt(document.getElementById('off-limit').value) || 0;
+        const img = document.getElementById('off-img').value.trim() || 'https://i.ibb.co/p0S0vS9/banner.jpg';
+        if (!title || !price) return showPopup('Error', 'Fill Offer Title and Price!', 'error');
+        if (!db.offers) db.offers = [];
+        db.offers.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            title,
+            price,
+            img,
+            inStock: true,
+            totalLimit: limit,
+            claimedCount: 0,
+            claimedByEmails: [],
+            claimedByUids: []
+        });
+        document.getElementById('off-title').value = '';
+        document.getElementById('off-price').value = '';
+        document.getElementById('off-limit').value = '';
+        clearImageField('off-img', 'off-img-preview', 'off-img-preview-container');
+        saveDB();
+        showPopup('Success', `✅ Offer Published with ${limit === 0 ? 'Unlimited' : limit} Limit!`, 'success');
+    }
+
+    function toggleOfferStock(id) {
+        const off = db.offers.find(o => o.id === id);
+        if (off) { off.inStock = !off.inStock;
+            saveDB();
+            showPopup('Stock', `✅ Offer is now ${off.inStock ? 'In Stock' : 'Out of Stock'}`, off.inStock ?
+                'success' : 'warning'); }
+    }
+
+    function deleteOffer(id) {
+        const offerToDelete = db.offers.find(o => o.id === id);
+        if (!offerToDelete) return;
+        if (confirm(`Delete "${offerToDelete.title}"? Claimed history will remain.`)) {
+            db.offers = db.offers.filter(o => o.id !== id);
+            saveDB();
+            showPopup('Success', `✅ "${offerToDelete.title}" deleted!`, 'success');
+        }
+    }
+
+    function deleteClaimedOfferLog(offerId, userEmail) {
+        const offer = db.offers.find(o => o.id === offerId);
+        if (offer) {
+            if (offer.claimedByEmails) {
+                offer.claimedByEmails = offer.claimedByEmails.filter(e => e !== userEmail);
+            }
+            if (offer.claimedCount > 0) offer.claimedCount -= 1;
+        }
+        saveDB();
+        showPopup('Success', '✅ Claim record deleted!', 'success');
+    }
+
+    function deleteUserReport(reportId) {
+        if (!db.userReports) return;
+        db.userReports = db.userReports.filter(r => r.reportId !== reportId);
+        saveDB();
+        showPopup('Success', '✅ Report deleted!', 'success');
+    }
+
+    function toggleBlockUser(email) {
+        const user = db.users.find(u => u.email === email);
+        if (!user) return;
+        user.isBlocked = !user.isBlocked;
+        saveDB();
+        showPopup('User', `${user.name} is now ${user.isBlocked ? 'BLOCKED' : 'UNBLOCKED'}`, user.isBlocked ?
+            'error' : 'success');
+    }
+
+    function setUserLimit(email) {
+        const user = db.users.find(u => u.email === email);
+        if (!user) return;
+        const limit = prompt(`Set max limit for ${user.name} (0 to remove):`, user.maxLimit || 0);
+        if (limit !== null) {
+            const val = parseInt(limit);
+            user.maxLimit = (isNaN(val) || val <= 0) ? 0 : val;
+            saveDB();
+            showPopup('Limit', user.maxLimit > 0 ? `Limit set to ৳${user.maxLimit}` : 'Limit removed (Unlimited)!',
+                'success');
+        }
+    }
+
+    function sendWarningUser(email) {
+        const user = db.users.find(u => u.email === email);
+        if (!user) return;
+        const warn = prompt(`Enter warning for ${user.name}:`, user.warningMsg || "");
+        if (warn !== null) {
+            user.warningMsg = warn.trim();
+            saveDB();
+            showPopup('Warning', warn.trim() ? 'Warning sent!' : 'Warning cleared!', 'warning');
+        }
+    }
+
+    function deleteUser(email) {
+        const user = db.users.find(u => u.email === email);
+        if (!user) return;
+        if (confirm(`Delete ${user.name}'s account?`)) {
+            db.users = db.users.filter(u => u.email !== email);
+            saveDB();
+            showPopup('Success', `✅ ${user.name}'s account deleted!`, 'success');
+        }
+    }
+
+    function searchAdminUsers() {
+        const term = document.getElementById('search-user').value.toLowerCase();
+        document.querySelectorAll('.admin-user-item').forEach(item => {
+            item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none';
+        });
+    }
+
+    function addPaymentMethod() {
+        const name = document.getElementById('pm-name').value;
+        const num = document.getElementById('pm-num').value;
+        const logo = document.getElementById('pm-logo').value;
+        const color = document.getElementById('pm-color').value;
+        if (!name || !num) return showPopup('Error', 'Method Name and Number are required!', 'error');
+
+        const newMethod = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name,
+            num,
+            logo,
+            color,
+            transactionUI: {
+                title: 'ট্রানজেকশন আইডি দিন',
+                step2: '"Send Money" -এ ক্লিক করুন।',
+                verifyBtn: 'VERIFY',
+                instr: 'সঠিক তথ্য দিন'
+            }
+        };
+        db.customMethods.push(newMethod);
+        document.getElementById('pm-name').value = '';
+        document.getElementById('pm-num').value = '';
+        clearImageField('pm-logo', 'pm-logo-preview', 'pm-logo-preview-container');
+        saveDB();
+        showPopup('Success', '✅ Payment Method Added with default Transaction UI!', 'success');
+    }
+
+    function deletePaymentMethod(id) {
+        db.customMethods = db.customMethods.filter(m => m.id !== id);
+        saveDB();
+        showPopup('Success', '✅ Method deleted!', 'success');
+    }
+
+    function addRank() {
+        const name = document.getElementById('r-name').value.trim();
+        const min = parseInt(document.getElementById('r-min').value);
+        const icon = document.getElementById('r-icon').value.trim() || 'https://i.ibb.co/hX4tFpP/bronze.png';
+        const theme = document.getElementById('r-theme').value;
+
+        if (!name || isNaN(min)) return showPopup('Error', 'Enter rank name and min spend!', 'error');
+
+        db.ranks = db.ranks.filter(r => r.name !== name);
+        db.ranks.push({ name, min, icon, theme });
+        db.ranks.sort((a, b) => a.min - b.min);
+
+        document.getElementById('r-name').value = '';
+        document.getElementById('r-min').value = '';
+        clearImageField('r-icon', 'r-icon-preview', 'r-icon-preview-container');
+
+        saveDB();
+        showPopup('Success', '✅ Rank Added/Updated!', 'success');
+    }
+
+    function addSection() {
+        const name = document.getElementById('c-name').value;
+        const img = document.getElementById('c-img').value || 'https://i.ibb.co/hX4tFpP/diamond.png';
+        if (!name) return showPopup('Error', 'Enter category name!', 'error');
+        db.sections.push({ name, img });
+        document.getElementById('c-name').value = '';
+        clearImageField('c-img', 'c-img-preview', 'c-img-preview-container');
+        saveDB();
+        showPopup('Success', '✅ Category Added!', 'success');
+    }
+
+    function addProduct() {
+        const section = document.getElementById('sel-sec').value;
+        const name = document.getElementById('p-name').value;
+        const img = document.getElementById('p-img').value;
+        const packs = document.getElementById('p-packs').value;
+        if (!section || !name || !packs) return showPopup('Error', 'Fill all product details!', 'error');
+        db.products.push({ id: Date.now() + Math.floor(Math.random() * 1000), section, name, img, packs });
+        document.getElementById('p-name').value = '';
+        document.getElementById('p-packs').value = '';
+        clearImageField('p-img', 'p-img-preview', 'p-img-preview-container');
+        saveDB();
+        showPopup('Success', '✅ Product Published!', 'success');
+    }
+
+    function approve(orderId) {
+        const order = db.adminOrders.find(o => o.id === orderId);
+        if (!order) return;
+        const user = db.users.find(u => u.email === order.userEmail);
+        if (user) {
+            if (order.type === "Deposit" || order.title.includes("Refill")) user.balance += order.price;
+            else user.totalSpend += order.price;
+            const uOrder = user.orders.find(uo => uo.id === orderId);
+            if (uOrder) uOrder.status = "Success";
+        }
+        db.adminOrders = db.adminOrders.filter(o => o.id !== orderId);
+        saveDB();
+        showPopup('Approved', '✅ Order approved successfully!', 'success');
+    }
+
+    function reject(orderId) {
+        const order = db.adminOrders.find(o => o.id === orderId);
+        if (!order) return;
+        const user = db.users.find(u => u.email === order.userEmail);
+        if (user) {
+            if (order.type === "Purchase") user.balance += order.price;
+            const uOrder = user.orders.find(uo => uo.id === orderId);
+            if (uOrder) uOrder.status = "Rejected";
+        }
+        db.adminOrders = db.adminOrders.filter(o => o.id !== orderId);
+        saveDB();
+        showPopup('Rejected', '❌ Order rejected!', 'error');
+    }
+
+    function delRank(n) {
+        db.ranks = db.ranks.filter(r => r.name !== n);
+        saveDB();
+        showPopup('Success', '✅ Rank deleted!', 'success');
+    }
+
+    function delSection(name) {
+        db.sections = db.sections.filter(s => s.name !== name);
+        db.products = db.products.filter(p => p.section !== name);
+        saveDB();
+        showPopup('Success', '✅ Category deleted!', 'success');
+    }
+
+    function delProduct(id) {
+        db.products = db.products.filter(p => p.id !== id);
+        saveDB();
+        showPopup('Success', '✅ Product deleted!', 'success');
+    }
+
+    function searchOrders() {
+        const term = document.getElementById('search-req').value.toLowerCase();
+        const filterVal = document.getElementById('req-filter').value.toLowerCase();
+
+        document.querySelectorAll('.req-item').forEach(item => {
+            const matchesSearch = item.innerText.toLowerCase().includes(term);
+            const matchesFilter = !filterVal || item.getAttribute('data-type').toLowerCase() === filterVal;
+            item.style.display = (matchesSearch && matchesFilter) ? 'block' : 'none';
+        });
+    }
+
+    function editUserBalance(email) {
+        const user = db.users.find(u => u.email === email);
+        if (!user) return;
+        const newBal = prompt(`Enter new balance for ${user.name}:`, user.balance);
+        if (newBal !== null && newBal !== "" && !isNaN(newBal)) {
+            user.balance = parseInt(newBal);
+            saveDB();
+            showPopup('Balance', `Updated to ৳${user.balance}`, 'success');
+        }
+    }
+
+    // ====== CHECK SESSION ON LOAD ======
+    window.onload = function() {
+        if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "true") {
+            isAdminLoggedIn = true;
+            isFirstLogin = false;
+            document.getElementById('email-field-container').style.display = 'none';
+            document.getElementById('login-subtext').innerText = 'Enter your secure password';
+        }
+
+        if (isAdminLoggedIn) {
+            document.getElementById('admin-login-screen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            init();
+        }
+    };
+    </script>
+</body>
+</html>
